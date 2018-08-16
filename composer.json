@@ -1,11 +1,7 @@
 {
-  "name": "craftcms/craft",
+  "name": "astuteo/craft",
   "description": "Craft CMS",
   "keywords": [
-    "craft",
-    "cms",
-    "craftcms",
-    "project"
   ],
   "license": "MIT",
   "homepage": "https://craftcms.com/",
