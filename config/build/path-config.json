@@ -1,0 +1,29 @@
+{
+    "src": "./src",
+    "dest": "./public_html/site-assets/",
+    "assets": "site-assets",
+    "temp": "./temp",
+    "templates": "templates",
+    "javascripts": {
+
+        "src": "js",
+        "dest": "js"
+    },
+    "stylesheets": {
+        "src": "sass",
+        "dest": "css"
+    },
+
+    "images": {
+        "src": "images",
+        "dest": "images"
+    },
+    "fonts": {
+        "src": "fonts",
+        "dest": "fonts"
+    },
+    "icons": {
+        "src": "icons",
+        "dest": "images"
+    }
+}
