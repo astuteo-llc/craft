@@ -22,4 +22,25 @@ return [
         'my-module' => \modules\Module::class,
     ],
     //'bootstrap' => ['my-module'],
+    '*' => [
+    ],
+    'dev' => [
+        'components' => [
+            'mailer' => function() {
+                // Get the stored email settings
+                $settings = Craft::$app->systemSettings->getEmailSettings();
+
+                // Override the transport adapter class
+                $settings->transportType = \craft\mail\transportadapters\Smtp::class;
+
+                // Override the transport adapter settings
+                $settings->transportSettings = [
+                    'host' => '127.0.0.1',
+                    'port' => '1025'
+                ];
+
+                return craft\helpers\MailerHelper::createMailer($settings);
+            }
+        ]
+    ],
 ];
