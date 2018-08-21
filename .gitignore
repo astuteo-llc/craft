@@ -1,4 +1,34 @@
-/.env
-/.idea
-/vendor
+# MAIN PROJECT
+/web/.htaccess
+/staging
+
+# OTHER PROJECTS
+
+# OSX NOISE
 .DS_Store
+profile
+.gitconfig
+
+# CRAFT APPLICATION FILES
+!dbs/*.sql
+/.env
+/.env.php
+/scripts/.env.sh
+/vendor
+/backups
+
+#IDE NOISE
+/.idea
+/.vscode
+
+# OTHER VCS
+.svn
+CVS
+
+# BUILD SYSTEM
+/node_modules
+/gulpfile.js/local.config.json
+/_build/bower/bower_components
+*.map
+*.js.map
+.sass-cache
