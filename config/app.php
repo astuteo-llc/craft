@@ -27,18 +27,17 @@ return [
     'dev' => [
         'components' => [
             'mailer' => function() {
-                // Get the stored email settings
+                /**
+                 * For local/dev set the SMTP server to
+                 * MailHog. All emails, other than the test in CP
+                 * should be delivered to http://127.0.0.1:8025
+                 */
                 $settings = Craft::$app->systemSettings->getEmailSettings();
-
-                // Override the transport adapter class
                 $settings->transportType = \craft\mail\transportadapters\Smtp::class;
-
-                // Override the transport adapter settings
                 $settings->transportSettings = [
                     'host' => '127.0.0.1',
                     'port' => '1025'
                 ];
-
                 return craft\helpers\MailerHelper::createMailer($settings);
             }
         ]
