@@ -183,6 +183,7 @@ module.exports = {
                     .pipe(sass())
                     .on('error', handleErrors)
                     .pipe(postcss('./../../postcss.config.js'))
+                    .on('error', handleErrors)
                     .pipe(gulpif(!global.production, sourcemaps.write()))
                     .pipe(gulp.dest(paths.dest))
                     .pipe(browserSync.stream());
