@@ -1,6 +1,6 @@
 /**
  * CORE ASTUTEO BUILD SYSTEM
- * Version 3.0 | Updated: 08/2018
+ * Version 3.0 | Updated: 12/2018
  *
  * This file is required by Blendid. We're overriding the stylesheets
  * process completely in order to incorporate Tailwind CSS
@@ -67,6 +67,7 @@ const postcss           = require('gulp-postcss');
 const sass              = require('gulp-sass');
 const gulpif            = require('gulp-if');
 const sourcemaps        = require('gulp-sourcemaps');
+var projectPath = require('../../node_modules/blendid/gulpfile.js/lib/projectPath');
 
 // Import Astuteo and Local Config
 const localConfig       = require('./local-config');
@@ -174,13 +175,20 @@ module.exports = {
             return function () {
                 var handleErrors = require('../../node_modules/blendid/gulpfile.js/lib/handleErrors');
                 const paths = {
-                    src: path.resolve(process.env.INIT_CWD, PATH_CONFIG.src, PATH_CONFIG.stylesheets.src, '**/*.{scss,sass}'),
+                    src: path.resolve(process.env.INIT_CWD, PATH_CONFIG.src, PATH_CONFIG.stylesheets.src, '**/*.{scss,sass,css}'),
                     dest: path.resolve(process.env.INIT_CWD, PATH_CONFIG.dest, PATH_CONFIG.stylesheets.dest),
                 };
+
+                if (TASK_CONFIG.stylesheets.sass && TASK_CONFIG.stylesheets.sass.includePaths) {
+                    TASK_CONFIG.stylesheets.sass.includePaths = TASK_CONFIG.stylesheets.sass.includePaths.map(function (includePath) {
+                        return projectPath(includePath)
+                    })
+                }
+
                 return gulp
                     .src(paths.src)
                     .pipe(gulpif(!global.production, sourcemaps.init()))
-                    .pipe(sass())
+                    .pipe(sass(TASK_CONFIG.stylesheets.sass))
                     .on('error', handleErrors)
                     .pipe(postcss('./../../postcss.config.js'))
                     .on('error', handleErrors)
@@ -285,8 +293,8 @@ module.exports = {
             })
             gulp.task('todo-js', function () {
                 gulp.src(jsPaths.src + '/**/*.js', {
-                        base: process.env.PWD
-                    })
+                    base: process.env.PWD
+                })
                     .pipe(todo({
                         skipUnsupported: true,
                         customTags: addTags,
@@ -296,8 +304,8 @@ module.exports = {
             })
             gulp.task('todo-styles', function () {
                 gulp.src(cssPaths.src + '/**/*.scss', {
-                        base: process.env.PWD
-                    })
+                    base: process.env.PWD
+                })
                     .pipe(todo({
                         skipUnsupported: true,
                         customTags: addTags,
@@ -308,8 +316,8 @@ module.exports = {
 
             gulp.task('todo-templates', function () {
                 gulp.src(process.env.PWD + '/templates/**/*.twig', {
-                        base: process.env.PWD
-                    })
+                    base: process.env.PWD
+                })
                     .pipe(todo({
                         skipUnsupported: true,
                         customTags: addTags,
