@@ -29,7 +29,7 @@ module.exports = ({ file, options, env }) => {
     if (global.production === true) {
         return {
             plugins: [
-                tailwindcss("./../../tailwind.js"),
+                tailwindcss("./../../tailwind.config.js"),
                 purgecss({
                     content: [
                         tPath + '/**/*.{twig,html}',
@@ -52,7 +52,7 @@ module.exports = ({ file, options, env }) => {
     } else {
         return {
             plugins: [
-                tailwindcss("./../../tailwind.js"),
+                tailwindcss("./../../tailwind.config.js"),
                 colorFunctions(),
                 postcssPresetEnv()
             ]
