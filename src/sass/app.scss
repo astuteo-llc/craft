@@ -1,0 +1,81 @@
+@tailwind base;
+//
+//  CONTENTS
+//   _________________
+//   \               /  ---- 2: SETTINGS (do not directly generate CSS)
+//    \             /  ----- 3: TOOLS (do not directly generate CSS)
+//     \   ITCSS   /  ------ 4: GENERIC
+//      \         /  ------- 5: ELEMENTS
+//       \       /  -------- 6: OBJECTS
+//        \     /  --------- 7: COMPONENTS
+//         \___/  ---------- 8: TRUMPS
+//
+
+$debug: false;
+
+// 1: VENDOR
+//
+// Vendor files are third-party files that are
+// not directly modified on a per project basis
+// unless absolutely necessary and noted
+
+
+// 2: SETTINGS
+//
+// Settings do not directly generate CSS content
+// and affect all CSS below. On existing projects
+// caution should be taken when modifying or adjusting these
+// unless it is intended to have site wide consequences.
+//
+
+// 3: TOOLS
+//
+// Tools are utilities that do not directly generate CSS
+// but adjusting existing tools may have site-wide affects
+//
+
+@tailwind components;
+
+// 4: GENERIC
+//
+// Generic styles are base browser style setting overrides
+// that affect all components below.
+
+// 5: ELEMENTS
+//
+// Styling for base HTML tags and elements that will affect
+// all objects and components below.
+//
+
+// 6: OBJECTS
+//
+// Styling for project specific objects that are intended
+// to be used across multiples places in the template
+// regardless of their context
+//
+
+// 7: COMPONENTS
+//
+// Specific modules that are transportable but intended to
+// be self contained pieces and to not override styles of
+// pieces above when not used as part of the component.
+// In most projects the majority of the work, especially,
+// after project launch, will happen here.
+//
+
+
+// 8: PAGES
+//
+// Page-specific styles that aren't used anywhere else
+// on the site.
+//
+
+// 9: TRUMPS / UTILITIES
+//
+// !important declarations or rules that should override
+// any specificity above. Useful for things like alert
+// messages
+//
+
+@tailwind utilities;
+
