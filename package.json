@@ -12,12 +12,12 @@
     "fancyselect": "^1.0.3",
     "gulp-cache": "^1.0.2",
     "imagemin-giflossy": "^5.1.10",
-    "imagemin-mozjpeg": "^7.0.0",
-    "imagemin-pngquant": "^6.0.0",
-    "imagemin-zopfli": "^5.1.0",
+    "imagemin-mozjpeg": "^8.0.0",
+    "imagemin-pngquant": "^7.0.0",
+    "imagemin-zopfli": "^6.0.0",
     "jquery": "^1.11.0",
     "jquery-validation": "^1.17.0",
-    "postcss-preset-env": "^5.3.0",
+    "postcss-preset-env": "^6.6.0",
     "velocity-animate": "^1.5.2",
     "velocity-ui-pack": "^1.2.2",
     "velocityjs": "^1.1.2"
@@ -32,6 +32,6 @@
     "gulp-todo": "^5.4.0",
     "node-neat": "^2.0.0-beta.0",
     "postcss-color-function": "^4.0.1",
-    "tailwindcss": "^0.6.4"
+    "tailwindcss": "^1.0.0-beta.8"
   }
 }
