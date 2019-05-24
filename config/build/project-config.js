@@ -1,8 +1,8 @@
 const pathConfig = require('./path-config'); // to pass public path directly to webpack
 module.exports = {
     info: {
-        "name": "PJ Power",
-        "url": "https://pjpower.com",
+        "name": "Project Name",
+        "url": "https://projecturl.com",
         "description": "Primary Marketing Site",
         "version": "1.0.0",
         "author": "Astuteo LLC",
@@ -15,7 +15,7 @@ module.exports = {
     javascripts: {
         publicPath: "/" + pathConfig.assets + "/" + pathConfig.javascripts.dest,
         entry: {
-            pjpower: ["./pjpower.js"]
+            app: ["./app.js"]
         },
         provide: {
             $: "jquery",
