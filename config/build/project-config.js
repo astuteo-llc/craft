@@ -17,11 +17,10 @@ module.exports = {
         entry: {
             app: ["./app.js"]
         },
-        provide: {
-            $: "jquery",
-            jQuery: "jquery",
-            "window.jQuery": "jquery"
-        },
+		babel: {
+			presets: ['env'],
+			plugins: ['transform-class-properties']
+		},
         include: ['node_modules']
     }
 }
