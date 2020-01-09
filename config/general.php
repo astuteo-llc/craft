@@ -13,18 +13,20 @@ return [
     '*' => [
         // Default Week Start Day (0 = Sunday, 1 = Monday...)
         'defaultWeekStartDay' => 0,
-
-        // Enable CSRF Protection (recommended)
-        'enableCsrfProtection' => true,
-
         // Whether generated URLs should omit "index.php"
         'omitScriptNameInUrls' => true,
 
         // Control Panel trigger word
         'cpTrigger' => 'admin',
-
+		'aliases' => array(
+			'siteUrl'   => getenv('DEFAULT_SITE_URL'),
+			'basePath' => getenv('BASE_PATH'),
+		),
         // The secure key Craft will use for hashing and encrypting data
-        'securityKey' => getenv('SECURITY_KEY'),
+        'securityKey' => 'HARDCODETHIS',
+
+		// Project Config (if true, be sure allow admin changes is false on production)
+		'useProjectConfigFile' => true,
     ],
 
     // Dev environment settings
@@ -40,11 +42,13 @@ return [
     'staging' => [
         // Base site URL
         'siteUrl' => null,
+		'allowAdminChanges' => false,
     ],
 
     // Production environment settings
     'production' => [
         // Base site URL
         'siteUrl' => null,
+		'allowAdminChanges' => false,
     ],
 ];
