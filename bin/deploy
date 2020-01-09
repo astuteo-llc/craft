@@ -1,0 +1,423 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2181
+
+config=./config/deploy.conf
+env=
+keep_releases=5
+web_dir="public_html"
+show_debug=
+
+#
+# output
+#
+red="\\033[0;31m"
+yellow="\\033[0;33m"
+green="\\033[0;32m"
+cyan="\\033[0;36m"
+nc="\\033[0m"
+
+usage() {
+  cat <<-EOF
+
+Usage: deploy [options] <env> [command]
+
+Options:
+
+  -h, --help           output help information
+  --debug              display SSH commands
+
+Commands:
+  syncdb               syncs database/sync.sql database to env not production
+  setup                run remote setup commands
+  config [key]         output config file or [key]
+  run <cmd>            run the given <cmd>
+  connect              open an ssh session to the host
+
+EOF
+}
+
+puts() {
+  echo -e "$*"
+}
+
+puterr() {
+  echo -e "$*" 1>&2
+}
+
+abort() {
+  puterr
+  puterr "${red}$*${nc}"
+  puterr
+  exit 1
+}
+
+info() {
+  puts "  → ${cyan}$*${nc}"
+}
+
+success() {
+  puts "${green}$*${nc}"
+}
+
+debug() {
+  if [ "$show_debug" = true ]; then
+    puterr "${yellow}$*${nc}"
+  fi
+}
+
+#
+# config
+#
+config_section() {
+  grep "^\\[$1" "$config" &> /dev/null
+}
+
+config_get() {
+  local key="$1"
+
+  [[ -n "$key" ]] \
+    && grep "^\\[$env" -A 20 "$config" \
+    | grep "^$key" \
+    | head -n 1 \
+    | cut -d ' ' -f 2-999 \
+    | sed -E "s/^ +//"
+}
+
+#
+# remote
+#
+ssh_command() {
+  local url
+  local key
+  local forward_agent
+  local port
+  local needs_tty
+  local command=(ssh)
+
+  url="$(config_get user)@$(config_get host)"
+  key="$(config_get key)"
+  forward_agent="$(config_get forward-agent)"
+  port="$(config_get port)"
+  needs_tty="$(config_get needs_tty)"
+
+  # Persist SSH connections for 60 seconds
+  command+=("-o ControlMaster=auto")
+  command+=("-o ControlPath=tmp/sockets/%r@%h-%p")
+  command+=("-o ControlPersist=60")
+
+  [[ -n "$forward_agent" ]] && command+=("-A")
+  [[ -n "$key" ]]           && command+=("-i $key")
+  [[ -n "$port" ]]          && command+=("-p $port")
+  [[ -n "$needs_tty" ]]     && command+=("-t")
+
+  command+=("$url")
+
+  echo "${command[@]}"
+}
+
+connect() {
+  local path
+  local shell
+
+  path="$(config_get path)"
+  shell="$(ssh_command)"
+
+  debug "$shell"
+
+  # shellcheck disable=SC2086
+  exec $shell -t "cd $path; \$SHELL --login"
+}
+
+syncdb() {
+  path="$(config_get path)"
+  database_path="$path/database"
+    if [[ $env == 'production' ]]; then
+        abort "Environment is production, sync db manually if intentional"
+    else
+        run "cd $path/current && ./scripts/backup_db.sh && ./scripts/restore_db.sh $path/current/database/sync.sql.gz"
+        [[ $? -eq 0 ]] || abort "Failed to sync. Make sure database/sync.sql.gz exists and you have deployed that release first."
+    fi
+}
+
+php_fpm_service() {
+  run "systemctl list-units | grep -E 'php.{3}-fpm' | sed 's/^ *//' | cut -d' ' -f1 | sed 's/\\.service//'"
+}
+
+#
+# helper
+#
+current_commit() {
+  local path
+  path="$(config_get path)"
+
+  run "cd $path/shared/cached-copy && git rev-parse HEAD"
+}
+
+commit_message() {
+  local commit
+  local path
+
+  commit="$1"
+  path="$(config_get path)"
+
+  run "cd $path/shared/cached-copy && git show --pretty=format:\"%s - %an\" HEAD | head -n 1"
+}
+
+require_env() {
+  config_section "$env" || abort "[$env] config section not defined"
+  [[ -z "$env" ]] && abort "<env> required"
+}
+
+check_for_local_changes() {
+  git --no-pager diff --exit-code --quiet          || abort "commit or stash your changes before deploying, or override with --force"
+  git --no-pager diff --exit-code --quiet --cached || abort "commit your staged changes before deploying, or override with --force"
+  [ -z "$(git rev-list "@{upstream}.." -n 1)" ]    || abort "push your changes before deploying, or override with --force"
+}
+
+#
+# commands
+#
+setup() {
+  local path
+  local repo
+
+  path=$(config_get path)
+  repo=$(config_get repo)
+
+  info "cloning $repo"
+  run "if [[ ! -d $path/shared/cached-copy/.git ]]; then git clone $repo $path/shared/cached-copy; fi"
+  [[ $? -eq 0 ]] || abort "failed to clone"
+
+  run "mkdir -p $path/{releases,shared/{config,scripts,craft/storage,public_html/cpresources,public_html/uploads,node_modules}}"
+  test $? -eq 0 || abort setup paths failed
+
+  run "cp -p $path/shared/cached-copy/.env.example $path/shared/config/.env.example "
+  test $? -eq 0 || abort setup failed to copy .env.example example file
+
+  run "cp -p $path/shared/cached-copy/scripts/example.live.env.sh $path/shared/scripts/example.env.sh "
+  test $? -eq 0 || abort setup failed to copy scripts/example.live.env.sh example file
+
+  success "setup complete"
+}
+
+config() {
+  if [[ $# -eq 0 ]]; then
+    cat "$config"
+  else
+    config_get "$1"
+  fi
+}
+
+run() {
+  local cmd
+  local job
+
+  cmd="$(ssh_command)"
+  job="$1"
+
+  debug "$cmd" "\"$job\""
+
+  # shellcheck disable=SC2086
+  $cmd $job
+}
+
+deploy() {
+  local ref
+  local path
+  local shared_path
+  local source_path
+  local release_name
+  local releases_path
+  local release_path
+
+  ref="$1"
+  path="$(config_get path)"
+  shared_path="$path/shared"
+  source_path="$shared_path/cached-copy"
+  release_name="$(date +%Y%m%d%H%M%S)"
+  releases_path="$path/releases"
+  release_path="$releases_path/$release_name"
+
+  info "deploying $ref to $env"
+
+
+  # Backup Current
+  info "backup database"
+  run "cd $path/current && ./scripts/backup_db.sh"
+  [[ $? -eq 0 ]] || abort "backup failed, do you have .env.sh setup in shared/scripts/?"
+
+  # Fetch source
+  info "fetching updates"
+  run "cd $source_path && git fetch --all"
+  [[ $? -eq 0 ]] || abort "fetch failed"
+
+
+  # Reset HEAD
+  info "resetting HEAD to $ref"
+  run "cd $source_path && git reset --hard $ref"
+  [[ $? -eq 0 ]] || abort "git reset failed"
+
+
+  # Create release
+  info "creating release $release_name"
+  run "mkdir $release_path"
+  [[ $? -eq 0 ]] || abort "failed to create $release_path"
+
+  run "rsync -lrpt --exclude=.git $source_path/ $release_path"
+  [[ $? -eq 0 ]] || abort "failed to copy source to $release_path"
+
+  revision=$(run "cd $source_path && git rev-parse --short HEAD")
+  run "echo $revision > $release_path/REVISION"
+
+
+  # Symlink shared resources
+  info "symlinking shared resources"
+  run "ln -sfn $shared_path/config/.env $release_path/.env && \
+
+       ln -sfn $shared_path/scripts/.env.sh $release_path/scripts/.env.sh && \
+
+       mkdir -p $shared_path/$web_dir/uploads && \
+       ln -sfn $shared_path/$web_dir/uploads $release_path/$web_dir/uploads && \
+
+       rm -drf $release_path/data && \
+       mkdir -p $shared_path/data && \
+       ln -sfn $shared_path/data $release_path/data && \
+
+       rm -dr  $release_path/storage && \
+       ln -sfn $shared_path/craft/storage $release_path/storage && \
+
+       rm -dr  $release_path/$web_dir/cpresources && \
+       ln -sfn $shared_path/$web_dir/cpresources $release_path/$web_dir/cpresources && \
+
+       ln -sfn $shared_path/node_modules $release_path/node_modules"
+  [[ $? -eq 0 ]] || abort "failed to symlink resources"
+
+
+  # Composer packages
+  info "installing composer packages"
+  run "cd $release_path && composer install"
+  [[ $? -eq 0 ]] || abort "failed to install composer packages"
+
+
+  # Node modules
+  info "installing node modules"
+  run "cd $release_path && yarn install --ignore-engines --quiet"
+  [[ $? -eq 0 ]] || abort "failed to install node modules"
+
+
+  # Build assets
+  info "building assets"
+  run "cd $release_path && yarn run blendid build"
+  [[ $? -eq 0 ]] || abort "failed to build assets"
+
+
+  # Run migrations
+  info "running database migrations"
+  run "cd $release_path && ./craft migrate/all"
+
+
+  # # Sync project config
+  info "sync project config"
+  run "cd $release_path && ./craft project-config/sync"
+
+
+  # Symlink directories
+  info "linking release"
+  run "if [[ ! -L $path/$web_dir ]]; then rm -drf $path/$web_dir; fi"
+  run "ln -sfn $release_path/$web_dir $path/$web_dir && \
+       ln -sfn $release_path          $path/current"
+
+
+  # Reload PHP-FPM
+  info "restarting php-fpm"
+  run "sudo -S service php7.4-fpm reload"
+
+
+  # Cleanup
+  # info "remove node_modules now that assets are built"
+  # run "cd $release_path && rm -rf node_modules"
+  # [[ $? -eq 0 ]] || abort "failed to remove node_modules"
+
+  info "cleaning previous releases (keeping $keep_releases)"
+  run "ls -1dt $releases_path/* | tail -n +$((keep_releases + 1)) | xargs rm -rf"
+  [[ $? -eq 0 ]] || abort "failed to clean up previous releases"
+
+  # Done
+  success "successfully deployed $ref"
+}
+
+#
+# main
+#
+main() {
+  # Create tmp directory for persisted sockets
+  mkdir -p tmp/sockets
+
+  local force=
+
+  while [[ $# -ne 0 ]]; do
+    local arg="$1"
+    shift
+
+    case "$arg" in
+      -h|--help)
+        usage
+        exit
+        ;;
+
+      --debug)
+        show_debug="true"
+        ;;
+
+      --force)
+        force="true"
+        ;;
+
+      run)
+        require_env;
+        run "cd $(config_get path) && $*"
+        exit
+        ;;
+
+      connect)
+        require_env
+        connect
+        exit
+        ;;
+
+      syncdb)
+        require_env
+        syncdb
+        exit
+        ;;
+
+      setup)
+        require_env
+        setup "$@"
+        exit
+        ;;
+
+      config)
+        config "$@"
+        exit ;;
+
+      *)
+        if [[ -z "$env" ]]; then
+          env=$arg
+        else
+          abort "unknown command: $arg"
+        fi
+        ;;
+    esac
+  done
+
+  require_env
+
+  if [ "$force" != true ]; then
+    check_for_local_changes
+  fi
+
+  deploy "$(config_get ref)"
+}
+
+main "$@"
