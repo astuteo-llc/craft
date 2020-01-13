@@ -12,7 +12,6 @@ profile
 # CRAFT APPLICATION FILES
 !dbs/*.sql
 /.env
-/.env.php
 /scripts/.env.sh
 /vendor
 /backups
@@ -27,8 +26,11 @@ CVS
 
 # BUILD SYSTEM
 /node_modules
-/gulpfile.js/local.config.json
-/_build/bower/bower_components
+/config/build/local-config.json
 *.map
 *.js.map
 .sass-cache
+/.composer
+/yarn-error.log
+/temp
+/public_html/site-assets
