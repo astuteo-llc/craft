@@ -11,7 +11,7 @@ module.exports = {
     templates: {
         path: "templates"
     },
-
+	tailwindconfig: 'tailwind.config.js',
     javascripts: {
         publicPath: "/" + pathConfig.assets + "/" + pathConfig.javascripts.dest,
         entry: {
@@ -22,5 +22,5 @@ module.exports = {
 			plugins: ['transform-class-properties']
 		},
         include: ['node_modules']
-    }
-}
+    },
+};

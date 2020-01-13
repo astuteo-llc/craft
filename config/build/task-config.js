@@ -1,6 +1,6 @@
 /**
  * CORE ASTUTEO BUILD SYSTEM
- * Version 3.0 | Updated: 12/2018
+ * Version 3.1 | Updated: 1/2020
  *
  * This file is required by Blendid. We're overriding the stylesheets
  * process completely in order to incorporate Tailwind CSS
@@ -14,9 +14,7 @@
  * 4: <pr>/config/build/local-config.js | Your locally dev URL, copy from sample.local-config.js
  * 5: <pr>/config/build/whitelist-selectors.js | whitelist for PurgeCSS
  * 6: <pr>/.browserslistrc | Lists the browsers we support for autoprefixer
- * 7: <pr>/postcss.config.js | PostCSS Configuration used by Gulp Task
- * 8: <pr>/tailwind.js | Tailwind Style Configuration
- * 9: <pr>/.balelrc | Babel Config https://babeljs.io/docs/en/babelrc.html
+ * 7: <pr>/tailwind.js | Tailwind Style Configuration
  *
  * IN THIS FILE:
  * 1: Require modules used in custom tasks
@@ -29,14 +27,14 @@
  *    |- 5A: Set Paths
  *    |- 5B: Imagemin (production only)
  *    |- 5C: TODO Creation
- *    |- 5D: Add Banners
  *    |- 5E: Delete Build Assets (production only)
  *    |- 5F: Copy Non-Revved Images (production only)
  *    |- 5G: Post Build Sequence
  *    |- 5H: Clear Image Compress Cache
- * 6: Task Hooks
- *
+ * 6: Task Hooks*
  */
+
+
 
 
 /**
@@ -47,8 +45,8 @@
  */
 
 const path              = require('path');
-const gulpSequence      = require('gulp-sequence')
-const gulp              = require('gulp')
+const gulpSequence      = require('gulp-sequence');
+const gulp              = require('gulp');
 const todo              = require('gulp-todo');
 const header            = require('gulp-header');
 const cache             = require('gulp-cache');
@@ -67,35 +65,92 @@ const postcss           = require('gulp-postcss');
 const sass              = require('gulp-sass');
 const gulpif            = require('gulp-if');
 const sourcemaps        = require('gulp-sourcemaps');
-var projectPath = require('../../node_modules/blendid/gulpfile.js/lib/projectPath');
+const projectPath		= require('../../node_modules/blendid/gulpfile.js/lib/projectPath');
+const handleErrors    	= require('../../node_modules/blendid/gulpfile.js/lib/handleErrors');
 
-// Import Astuteo and Local Config
-const pathsConfig       = require('./path-config');
+// PostCSS & PostCSS Plugins
+const cssnano           = require('cssnano');
+const autoprefixer 		= require('autoprefixer');
+const colorFunctions    = require('postcss-color-function');
+const postcssPresetEnv  = require('postcss-preset-env');
+const tailwindcss       = require("tailwindcss");
+const purgecss          = require('@fullhuman/postcss-purgecss');
+
+// Import Astuteo and local Config and add paths
 const project           = require('./project-config');
-const thisJs = project.javascripts;
-const thisInfo = project.info;
-const thisTemplates = project.templates;
-let localConfigUrl 		= 'http://hamiltonengine.test';
+const thisJs 			= project.javascripts;
+const thisInfo 			= project.info;
+const thisTemplates 	= project.templates;
+let localConfigUrl 		= 'http://site.test';
 try {
 	localConfigUrl       = require('./local-config').url;
 } catch(e) {
 
 }
+const pwd = process.env.PWD;
+
+/**
+ * 1: PostCSS Configuration
+ *
+ */
+class TailwindExtractor {
+	static extract(content) {
+		return content.match(/[A-Za-z0-9-_:\/]+/g) || [];
+	}
+}
+const whitelist         = require(pwd + '/config/build/whitelist-selectors');
+// Load and configure plugins
+let postCssPlugins = [
+	tailwindcss(pwd + "/" + project.tailwindconfig),
+	autoprefixer({
+		grid: "autoplace"
+	}),
+	postcssPresetEnv(),
+	colorFunctions(),
+];
+
+// PurgeCSS runs only on production build. Configure it here:
+const purgeCssConfig = {
+	content: [
+		pwd + '/templates/**/*.{twig,html}',
+		pwd + '/src/js/**/*.{js,vue} ',
+	],
+	whitelist: whitelist,
+	extractors: [
+		{
+			extractor: TailwindExtractor,
+			extensions: ['twig','js','html','vue']
+		}
+	]
+};
 
 /**
  * 2: Astuteo Banner(added to CSS and JS in build process)
  *
  * Appends this banner at the top of all built JS and CSS files
  */
+Date.prototype.mmddyyyy = function() {
+	let mm = this.getMonth() + 1; // getMonth() is zero-based
+	let dd = this.getDate();
+	return [
+		(mm>9 ? '' : '0') + mm,
+		(dd>9 ? '' : '0') + dd,
+		this.getFullYear()
+	].join('');
+};
+
+let date = new Date();
+date = date.mmddyyyy();
 
 var banner = ['/**',
 	' * <%= pkg.name %> - <%= pkg.description %>',
-	' * @version v<%= pkg.version %>',
+	' * @date <%= date %>',
 	' * @link <%= pkg.url %>',
-	' * @author <%= pkg.author %>',
+	' * @author <%= pkg.author %> - <%= pkg.authorUrl %>',
 	' */',
 	''
 ].join('\n');
+
 
 
 /**
@@ -135,7 +190,7 @@ const imageMinConfig = [
 	imageminMozjpeg({
 		quality: 90
 	})
-]
+];
 
 /**
  * 4: Astuteo 's adjustments to core configuration
@@ -147,7 +202,7 @@ module.exports = {
 	html: false,
 	images: true,
 	fonts: true,
-	static: true,
+	static: false,
 	svgSprite: false,
 	ghPages: false,
 	stylesheets: true,
@@ -156,7 +211,9 @@ module.exports = {
 		proxy: {
 			target: localConfigUrl
 		},
-		files: [thisTemplates.path]
+		files: [thisTemplates.path],
+		open: false,
+		ghostMode: false,
 	},
 	production: {
 		rev: true
@@ -170,37 +227,54 @@ module.exports = {
 	 * as part of the build process to load TailwindCSS where needed.
 	 *
 	 * See: https://github.com/vigetlabs/blendid/wiki/Configuration#alternatetask
-	 *
-	 * Please see <project root>/postcss.config.js to see the full
-	 * PostCSS and tailwind configuration
 	 */
-	stylesheets: {
-		extensions: ["sass", "scss", "css"],
-		alternateTask: function (gulp, PATH_CONFIG, TASK_CONFIG) {
-			return function () {
-				var handleErrors = require('../../node_modules/blendid/gulpfile.js/lib/handleErrors');
-				const paths = {
-					src: path.resolve(process.env.INIT_CWD, PATH_CONFIG.src, PATH_CONFIG.stylesheets.src, '**/*.{scss,sass,css}'),
-					dest: path.resolve(process.env.INIT_CWD, PATH_CONFIG.dest, PATH_CONFIG.stylesheets.dest),
-				};
 
+	stylesheets: {
+		alternateTask: function(gulp, PATH_CONFIG, TASK_CONFIG) {
+			return function() {
+				const pwd = process.env.PWD
+				const paths = {
+					src: path.resolve(
+						pwd,
+						PATH_CONFIG.src,
+						PATH_CONFIG.stylesheets.src,
+						'**/*.{css,sass,scss}'
+					),
+					dest: path.resolve(
+						pwd,
+						PATH_CONFIG.dest,
+						PATH_CONFIG.stylesheets.dest
+					)
+				}
 				if (TASK_CONFIG.stylesheets.sass && TASK_CONFIG.stylesheets.sass.includePaths) {
 					TASK_CONFIG.stylesheets.sass.includePaths = TASK_CONFIG.stylesheets.sass.includePaths.map(function (includePath) {
 						return projectPath(includePath)
 					})
 				}
+				const cssnanoConfig = TASK_CONFIG.stylesheets.cssnano || {};
+				cssnanoConfig.autoprefixer = false;
+
+				let preprocess = !!TASK_CONFIG.stylesheets.sass;
+				if (global.production) {
+					postCssPlugins.push(cssnano(cssnanoConfig));
+					postCssPlugins.push(purgecss(purgeCssConfig));
+				}
 
 				return gulp
 					.src(paths.src)
 					.pipe(gulpif(!global.production, sourcemaps.init()))
-					.pipe(sass(TASK_CONFIG.stylesheets.sass))
+					.pipe(gulpif(preprocess, sass(TASK_CONFIG.stylesheets.sass)))
 					.on('error', handleErrors)
-					.pipe(postcss('./../../postcss.config.js'))
+					.pipe(postcss(postCssPlugins))
 					.on('error', handleErrors)
 					.pipe(gulpif(!global.production, sourcemaps.write()))
+					.pipe(gulpif(global.production, header(banner, {
+						pkg: thisInfo,
+						date: date
+					})))
 					.pipe(gulp.dest(paths.dest))
-					.pipe(browserSync.stream());
-			};
+					.pipe(browserSync.stream())
+			}
 		}
 	},
 
@@ -213,7 +287,6 @@ module.exports = {
 	 */
 	additionalTasks: {
 		initialize(gulp, PATH_CONFIG, TASK_CONFIG) {
-
 			/**
 			 * 5A: Set Paths
 			 *
@@ -225,23 +298,19 @@ module.exports = {
 			const paths = {
 				src: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.images.dest),
 				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.images.dest)
-			}
+			};
 			const cssPaths = {
-				src: path.resolve(process.env.PWD, PATH_CONFIG.src, PATH_CONFIG.stylesheets.src),
-				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.stylesheets.dest)
-			}
+				src: path.resolve(pwd, PATH_CONFIG.src, PATH_CONFIG.stylesheets.src),
+				dest: path.resolve(pwd, PATH_CONFIG.dest, PATH_CONFIG.stylesheets.dest)
+			};
 			const jsPaths = {
 				src: path.resolve(process.env.PWD, PATH_CONFIG.src, PATH_CONFIG.javascripts.src),
 				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.javascripts.dest)
-			}
+			};
 			const imgPaths = {
 				src: path.resolve(process.env.PWD, PATH_CONFIG.src, PATH_CONFIG.images.src),
 				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.images.dest)
-			}
-			const mainPaths = {
-				src: path.resolve(process.env.PWD, PATH_CONFIG.src),
-				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest)
-			}
+			};
 
 			/**
 			 * 5B: Imagemin(production only)
@@ -315,28 +384,7 @@ module.exports = {
 						fileName: 'todo-templates.md'
 					}))
 					.pipe(gulp.dest(process.env.PWD));
-			})
-
-			/**
-			 * 5D: Add Banners
-			 *
-			 * Add banners to our CSS and JS for reference.
-			 * See section 2 for the copy configuration.
-			 */
-			gulp.task('banner-styles', function () {
-				gulp.src(cssPaths.dest + '/**/*.css')
-					.pipe(header(banner, {
-						pkg: thisInfo
-					}))
-					.pipe(gulp.dest(cssPaths.dest));
-			})
-			gulp.task('banner-js', function () {
-				gulp.src(jsPaths.dest + '/**/*.js')
-					.pipe(header(banner, {
-						pkg: thisInfo
-					}))
-					.pipe(gulp.dest(jsPaths.dest));
-			})
+			});
 
 			/**
 			 * 5E: Delete Build Assets(production only)
@@ -349,19 +397,7 @@ module.exports = {
 				del.sync([jsPaths.dest + '/**', cssPaths.dest + '/**', imgPaths.dest + '/**'], {
 					force: true
 				});
-			})
-
-			/**
-			 * 5F: Copy Non - Revved Images(production only)
-			 *
-			 * This task is only needed to support images that are embedded
-			 * directly into the templates and not updated according to the
-			 * rev-manifest.json file
-			 */
-			gulp.task('copy-images', function () {
-				gulp.src(imgPaths.src + '/**/*.**')
-					.pipe(gulp.dest(imgPaths.dest));
-			})
+			});
 
 			/**
 			 * 5G: Post Build Sequence
@@ -373,8 +409,8 @@ module.exports = {
 			 * you may run into issues.
 			 */
 			gulp.task('astuteoPostBuild', function (cb) {
-				gulpSequence('copy-images','image-min', 'banner-styles', 'banner-js', cb)
-			})
+				gulpSequence('stylesheets', cb)
+			});
 
 			/**
 			 * 5H: Clear Image Compress Cache
@@ -403,7 +439,7 @@ module.exports = {
 		},
 		production: {
 			prebuild: ['flush-assets'],
-			postbuild: ['astuteoPostBuild']
+			postbuild: false
 		}
 	}
-}
+};
