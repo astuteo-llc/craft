@@ -397,6 +397,18 @@ module.exports = {
 			});
 
 			/**
+			 * 5F: Copy Non - Revved Images(production only)
+			 *
+			 * This task is only needed to support images that are embedded
+			 * directly into the templates and not updated according to the
+			 * rev-manifest.json file
+			 */
+			gulp.task('copy-images', function () {
+				gulp.src(imgPaths.src + '/**/*.**')
+					.pipe(gulp.dest(imgPaths.dest));
+			});
+
+			/**
 			 * 5G: Post Build Sequence
 			 *
 			 * Sequence of custom tasks to run after the production build
@@ -406,7 +418,7 @@ module.exports = {
 			 * you may run into issues.
 			 */
 			gulp.task('astuteoPostBuild', function (cb) {
-				gulpSequence('stylesheets', cb)
+				gulpSequence('copy-images','image-min', cb)
 			});
 
 			/**
@@ -436,7 +448,7 @@ module.exports = {
 		},
 		production: {
 			prebuild: ['flush-assets'],
-			postbuild: false
+			postbuild: ['astuteoPostBuild']
 		}
 	}
 };
