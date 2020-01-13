@@ -12,7 +12,7 @@
         "src": "sass",
         "dest": "css"
     },
-	static: {
+	"static": {
 	  "src": "static",
 	  "dest": "static"
 	},
