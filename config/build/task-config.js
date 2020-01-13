@@ -199,7 +199,7 @@ module.exports = {
 	html: false,
 	images: true,
 	fonts: true,
-	static: false,
+	static: true,
 	svgSprite: false,
 	ghPages: false,
 	stylesheets: true,
