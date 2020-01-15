@@ -253,8 +253,8 @@ module.exports = {
 
 				let preprocess = !!TASK_CONFIG.stylesheets.sass;
 				if (global.production) {
-					postCssPlugins.push(cssnano(cssnanoConfig));
 					postCssPlugins.push(purgecss(purgeCssConfig));
+					postCssPlugins.push(cssnano(cssnanoConfig));
 				}
 
 				return gulp
