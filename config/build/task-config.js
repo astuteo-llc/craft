@@ -1,6 +1,6 @@
 /**
  * CORE ASTUTEO BUILD SYSTEM
- * Version 3.1 | Updated: 1/2020
+ * Version 4.0 | Updated: 1/2020
  *
  * This file is required by Blendid. We're overriding the stylesheets
  * process completely in order to incorporate Tailwind CSS
@@ -25,12 +25,11 @@
  *    |- 4B: Load Webpack Config
  * 5: Additional Tasks
  *    |- 5A: Set Paths
- *    |- 5B: Imagemin (production only)
+ *    |- 5B: Compress Images
  *    |- 5C: TODO Creation
  *    |- 5E: Delete Build Assets (production only)
  *    |- 5F: Copy Non-Revved Images (production only)
  *    |- 5G: Post Build Sequence
- *    |- 5H: Clear Image Compress Cache
  * 6: Task Hooks*
  */
 
@@ -49,13 +48,6 @@ const header            = require('gulp-header');
 const cache             = require('gulp-cache');
 const del               = require('del');
 
-// image optimizations
-const imagemin          = require('gulp-imagemin');
-const imageminPngquant  = require('imagemin-pngquant');
-const imageminZopfli    = require('imagemin-zopfli');
-const imageminMozjpeg   = require('imagemin-mozjpeg'); //need to run 'brew install libpng'
-const imageminGiflossy  = require('imagemin-giflossy');
-
 // To add our alternate Sass task
 const browserSync       = require('browser-sync');
 const postcss           = require('gulp-postcss');
@@ -67,10 +59,10 @@ const handleErrors    	= require('../../node_modules/blendid/gulpfile.js/lib/han
 
 // PostCSS & PostCSS Plugins
 const cssnano           = require('cssnano');
+const autoprefixer 		= require('autoprefixer');
 const colorFunctions    = require('postcss-color-function');
 const postcssPresetEnv  = require('postcss-preset-env');
-const postcssFlexBugs  	= require('postcss-flexbugs-fixes');
-const tailwindcss       = require('tailwindcss');
+const tailwindcss       = require("tailwindcss");
 const purgecss          = require('@fullhuman/postcss-purgecss');
 
 // Import Astuteo and local Config and add paths
@@ -78,7 +70,7 @@ const project           = require('./project-config');
 const thisJs 			= project.javascripts;
 const thisInfo 			= project.info;
 const thisTemplates 	= project.templates;
-let localConfigUrl 		= 'http://site.test';
+let localConfigUrl 		= 'http://resonantcapital.test';
 try {
 	localConfigUrl       = require('./local-config').url;
 } catch(e) {
@@ -95,20 +87,14 @@ class TailwindExtractor {
 		return content.match(/[A-Za-z0-9-_:\/]+/g) || [];
 	}
 }
-const whitelist         = require(pwd + '/config/build/whitelist-selectors');
+const whitelist         = require(pwd + '/config/build/whitelist-selectors.js');
 // Load and configure plugins
 let postCssPlugins = [
 	tailwindcss(pwd + "/" + project.tailwindconfig),
-	postcssPresetEnv({
-		stage: 2,
-		features: {
-			'nesting-rules': true
-		},
-		autoprefixer: {
-			grid: true
-		}
+	autoprefixer({
+		grid: "autoplace"
 	}),
-	postcssFlexBugs(),
+	postcssPresetEnv(),
 	colorFunctions(),
 ];
 
@@ -155,45 +141,6 @@ var banner = ['/**',
 ].join('\n');
 
 
-
-/**
- * 3: Imagemin Config
- *
- * Optimized settings for image compression task. The settings
- * are more intensive than our previous build systems so the first
- * run will take awhile but is later cached locally by the task.
- */
-const imageMinConfig = [
-	//png
-	imageminPngquant({
-		speed: 1,
-		quality: 98 //lossy settings
-	}),
-	imageminZopfli({
-		more: true
-		// iterations: 50 // very slow but more effective
-	}),
-	//gif
-	imageminGiflossy({
-		optimizationLevel: 3,
-		optimize: 3, //keep-empty: Preserve empty transparent frames
-		lossy: 2
-	}),
-	//svg
-	imagemin.svgo({
-		plugins: [{
-			removeViewBox: false
-		}]
-	}),
-	//jpg lossless
-	imagemin.jpegtran({
-		progressive: true
-	}),
-	//jpg very light lossy, use vs jpegtran
-	imageminMozjpeg({
-		quality: 90
-	})
-];
 
 /**
  * 4: Astuteo 's adjustments to core configuration
@@ -298,38 +245,57 @@ module.exports = {
 			 * task is running (in the node_modules folder) so we need to resolve
 			 * those slightly different than accessing our config directly.
 			 */
-			const paths = {
-				src: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.images.dest),
-				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.images.dest)
-			};
+			const pathSrc = PATH_CONFIG.src;
+			const pathImage = PATH_CONFIG.images.src;
+
 			const cssPaths = {
-				src: path.resolve(pwd, PATH_CONFIG.src, PATH_CONFIG.stylesheets.src),
+				src: path.resolve(pwd, pathSrc, PATH_CONFIG.stylesheets.src),
 				dest: path.resolve(pwd, PATH_CONFIG.dest, PATH_CONFIG.stylesheets.dest)
 			};
 			const jsPaths = {
-				src: path.resolve(process.env.PWD, PATH_CONFIG.src, PATH_CONFIG.javascripts.src),
+				src: path.resolve(process.env.PWD, pathSrc, PATH_CONFIG.javascripts.src),
 				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.javascripts.dest)
 			};
 			const imgPaths = {
-				src: path.resolve(process.env.PWD, PATH_CONFIG.src, PATH_CONFIG.images.src),
+				src: path.resolve(process.env.PWD, pathSrc, PATH_CONFIG.images.src),
 				dest: path.resolve(process.env.PWD, PATH_CONFIG.dest, PATH_CONFIG.images.dest)
 			};
 
 			/**
-			 * 5B: Imagemin(production only)
-			 *
-			 * The task that compresses all the images in the public assets folder.
-			 * The configuration for this task can be found in section 3. Compared to
-			 * past image tasks this one is much more thorough and the initial run may
-			 * take a few minutes. We're additionally loading the cache module that should
-			 * make subsequent runs much faster.
+			 * Image Compression
+			 * * 5B: Imagemin (local dev only)
+			 * Should only be run local and replace the files
+			 * in the src directory that you want to use
+			 * https://www.npmjs.com/package/compress-images
 			 */
-			gulp.task('image-min', function () {
-				console.log('IF YOU ARE running this uncached it may take a few minutes');
-				gulp.src(paths.src + '/**/*.{gif,png,jpg,svg}')
-					.pipe(cache(imagemin(imageMinConfig)))
-					.pipe(gulp.dest(paths.dest));
-			})
+			const compressPath = pwd + '/' + pathSrc + '/images-compressed/';
+			gulp.task('compress_images', function() {
+				const compressImages 	= require('compress-images');
+				//[jpg+gif+png+svg] ---to---> [jpg(webp)+gif(gifsicle)+png(webp)+svg(svgo)]
+				compressImages(imgPaths.src + '/**/*.{jpg,JPG,jpeg,JPEG,gif,png,svg}', compressPath, {compress_force: false, statistic: true, autoupdate: true}, false,
+					{jpg: {engine: 'webp', command: false}},
+					{png: {engine: 'webp', command: false}},
+					{svg: {engine: 'svgo', command: false}},
+					{gif: {engine: 'gifsicle', command: ['--colors', '64', '--use-col=web']}}, function(){
+						//-------------------------------------------------
+						//[jpg] ---to---> [jpg(jpegtran)] WARNING!!! autoupdate  - recommended to turn this off, it's not needed here - autoupdate: false
+						compressImages(imgPaths.src + '/**/*.{jpg,JPG,jpeg,JPEG}', compressPath, {compress_force: false, statistic: true, autoupdate: false}, false,
+							{jpg: {engine: 'mozjpeg', command: ['-quality', '80']}},
+							{png: {engine: false, command: false}},
+							{svg: {engine: false, command: false}},
+							{gif: {engine: false, command: false}}, function(){
+								//[png] ---to---> [png(pngquant)] WARNING!!! autoupdate  - recommended to turn this off, it's not needed here - autoupdate: false
+								compressImages(imgPaths.src + '/**/*.png', compressPath, {compress_force: false, statistic: true, autoupdate: false}, false,
+									{jpg: {engine: false, command: false}},
+									{png: {engine: 'pngquant', command: ['--quality=30-60']}},
+									{svg: {engine: false, command: false}},
+									{gif: {engine: false, command: false}}, function(){
+									});
+							});
+						//-------------------------------------------------
+					})
+				;
+			}).on('error', handleErrors);
 
 			/**
 			 * 5C: TODO Creation
@@ -389,6 +355,9 @@ module.exports = {
 					.pipe(gulp.dest(process.env.PWD));
 			});
 
+
+
+
 			/**
 			 * 5E: Delete Build Assets(production only)
 			 *
@@ -425,18 +394,6 @@ module.exports = {
 			 */
 			gulp.task('astuteoPostBuild', function (cb) {
 				gulpSequence('copy-images', cb)
-			});
-
-			/**
-			 * 5H: Clear Image Compress Cache
-			 *
-			 * A helper task to run directly in the scenario that you're
-			 * running into oddities with production image compression
-			 * NOTE: Once you run this you can expect the image compression
-			 * task to take a long time on the next prod run.
-			 */
-			gulp.task('clear', function (cb) {
-				cache.clearAll()
 			});
 
 		},

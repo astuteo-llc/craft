@@ -301,7 +301,7 @@ deploy() {
 
   # Node modules
   info "installing node modules"
-  run "cd $release_path && yarn install --ignore-engines --quiet"
+  run "cd $release_path && yarn install --ignore-engines --quiet --production"
   [[ $? -eq 0 ]] || abort "failed to install node modules"
 
 
