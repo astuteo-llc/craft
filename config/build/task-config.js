@@ -67,10 +67,10 @@ const handleErrors    	= require('../../node_modules/blendid/gulpfile.js/lib/han
 
 // PostCSS & PostCSS Plugins
 const cssnano           = require('cssnano');
-const autoprefixer 		= require('autoprefixer');
 const colorFunctions    = require('postcss-color-function');
 const postcssPresetEnv  = require('postcss-preset-env');
-const tailwindcss       = require("tailwindcss");
+const postcssFlexBugs  	= require('postcss-flexbugs-fixes');
+const tailwindcss       = require('tailwindcss');
 const purgecss          = require('@fullhuman/postcss-purgecss');
 
 // Import Astuteo and local Config and add paths
@@ -99,10 +99,16 @@ const whitelist         = require(pwd + '/config/build/whitelist-selectors');
 // Load and configure plugins
 let postCssPlugins = [
 	tailwindcss(pwd + "/" + project.tailwindconfig),
-	autoprefixer({
-		grid: "autoplace"
+	postcssPresetEnv({
+		stage: 2,
+		features: {
+			'nesting-rules': true
+		},
+		autoprefixer: {
+			grid: true
+		}
 	}),
-	postcssPresetEnv(),
+	postcssFlexBugs(),
 	colorFunctions(),
 ];
 
@@ -418,7 +424,7 @@ module.exports = {
 			 * you may run into issues.
 			 */
 			gulp.task('astuteoPostBuild', function (cb) {
-				gulpSequence('copy-images','image-min', cb)
+				gulpSequence('copy-images', cb)
 			});
 
 			/**

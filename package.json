@@ -1,32 +1,32 @@
 {
-  "private": true,
-  "scripts": {
-    "blendid": "BLENDID_CONFIG_PATH='./config/build' blendid",
-    "watch": "yarn run blendid",
-    "prod": "yarn run blendid build",
-    "clear": "yarn run blendid clear"
-  },
-  "dependencies": {
-	"autoprefixer": "^9.7.3",
-	"blendid": "4.5.1",
-	"cssnano": "^4.1.10",
-    "gulp-cache": "^1.1.3",
-	"imagemin-giflossy": "^5.1.10",
-	"imagemin-mozjpeg": "^8.0.0",
-	"imagemin-pngquant": "^8.0.0",
-    "imagemin-zopfli": "^6.0.0",
-    "postcss-preset-env": "^6.7.0",
-	"tailwindcss-typography": "^2.2.0",
-	"@fullhuman/postcss-purgecss": "^1.3.0",
-	"babel-eslint": "^10.0.3",
-	"babel-plugin-transform-class-properties": "^6.24.1",
-	"babel-preset-env": "^1.7.0",
-	"eslint": "^6.8.0",
-	"gulp-header": "^2.0.9",
-	"gulp-imagemin": "^6.2.0",
-	"gulp-postcss": "^8.0.0",
-	"gulp-todo": "^7.1.1",
-	"postcss-color-function": "^4.1.0",
-	"tailwindcss": "1.*.*"
-  }
+		"private": true,
+		"scripts": {
+				"blendid": "BLENDID_CONFIG_PATH='./config/build' blendid",
+				"watch": "yarn run blendid",
+				"prod": "yarn run blendid build",
+				"clear": "yarn run blendid clear"
+		},
+		"dependencies": {
+				"@fullhuman/postcss-purgecss": "^1.3.0",
+				"babel-eslint": "^10.0.3",
+				"babel-plugin-transform-class-properties": "^6.24.1",
+				"babel-preset-env": "^1.7.0",
+				"blendid": "4.5.1",
+				"cssnano": "^4.1.10",
+				"eslint": "^6.8.0",
+				"gulp-cache": "^1.1.3",
+				"gulp-header": "^2.0.9",
+				"gulp-imagemin": "^6.2.0",
+				"gulp-postcss": "^8.0.0",
+				"gulp-todo": "^7.1.1",
+				"imagemin-giflossy": "^5.1.10",
+				"imagemin-mozjpeg": "^8.0.0",
+				"imagemin-pngquant": "^8.0.0",
+				"imagemin-zopfli": "^6.0.0",
+				"postcss-color-function": "^4.1.0",
+				"postcss-flexbugs-fixes": "^4.1.0",
+				"postcss-preset-env": "^6.7.0",
+				"tailwindcss": "1.*.*",
+				"tailwindcss-typography": "^2.2.0"
+		}
 }
