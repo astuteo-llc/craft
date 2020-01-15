@@ -69,7 +69,7 @@ const project           = require('./project-config');
 const thisJs 			= project.javascripts;
 const thisInfo 			= project.info;
 const thisTemplates 	= project.templates;
-let localConfigUrl 		= 'http://resonantcapital.test';
+let localConfigUrl 		= 'http://site.test';
 try {
 	localConfigUrl       = require('./local-config').url;
 } catch(e) {
