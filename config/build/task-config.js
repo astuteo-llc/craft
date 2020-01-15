@@ -45,7 +45,6 @@ const gulpSequence      = require('gulp-sequence');
 const gulp              = require('gulp');
 const todo              = require('gulp-todo');
 const header            = require('gulp-header');
-const cache             = require('gulp-cache');
 const del               = require('del');
 
 // To add our alternate Sass task
