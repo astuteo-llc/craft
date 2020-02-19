@@ -13,27 +13,33 @@ return [
     '*' => [
         // Default Week Start Day (0 = Sunday, 1 = Monday...)
         'defaultWeekStartDay' => 0,
+
         // Whether generated URLs should omit "index.php"
         'omitScriptNameInUrls' => true,
 
         // Control Panel trigger word
         'cpTrigger' => 'admin',
+
+		// Project Config
+		'useProjectConfigFile' => true,
+
+		// The secure key Craft will use for hashing and encrypting data
+		'securityKey' => 'UPDATE---HARDCODETHIS',
+
+		'craftEnv' => CRAFT_ENVIRONMENT,
+
 		'aliases' => array(
 			'siteUrl'   => getenv('DEFAULT_SITE_URL'),
 			'basePath' => getenv('BASE_PATH'),
+			'cdnBaseUrl' => 'https://static.UPDATE.com/',
+			'cdnBucket' => 'UPDATE',
+			'cdnRegion' => 'UPDATE',
+			's3Key' => 'UPDATE',
 		),
-        // The secure key Craft will use for hashing and encrypting data
-        'securityKey' => 'HARDCODETHIS',
-
-		// Project Config (if true, be sure allow admin changes is false on production)
-		'useProjectConfigFile' => true,
     ],
 
     // Dev environment settings
     'dev' => [
-        // Base site URL
-        'siteUrl' => null,
-
         // Dev Mode (see https://craftcms.com/support/dev-mode)
         'devMode' => true,
     ],
@@ -41,14 +47,12 @@ return [
     // Staging environment settings
     'staging' => [
         // Base site URL
-        'siteUrl' => null,
 		'allowAdminChanges' => false,
     ],
 
     // Production environment settings
     'production' => [
         // Base site URL
-        'siteUrl' => null,
 		'allowAdminChanges' => false,
     ],
 ];
