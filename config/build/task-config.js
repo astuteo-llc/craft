@@ -90,9 +90,7 @@ const whitelist         = require(pwd + '/config/build/whitelist-selectors.js');
 // Load and configure plugins
 let postCssPlugins = [
 	tailwindcss(pwd + "/" + project.tailwindconfig),
-	autoprefixer({
-		grid: "autoplace"
-	}),
+	autoprefixer(),
 	postcssPresetEnv(),
 	colorFunctions(),
 ];
@@ -104,12 +102,8 @@ const purgeCssConfig = {
 		pwd + '/src/js/**/*.{js,vue} ',
 	],
 	whitelist: whitelist,
-	extractors: [
-		{
-			extractor: TailwindExtractor,
-			extensions: ['twig','js','html','vue']
-		}
-	]
+	defaultExtractor: content =>
+		content.match(/[\w-/:]+(?<!:)/g) || []
 };
 
 /**
