@@ -15,7 +15,7 @@
 	},
 	"require": {
 		"craftcms/cms": "^3.4.0",
-		"vlucas/phpdotenv": "^3.4.0",
+		"vlucas/phpdotenv": "^4.1.2",
 		"nystudio107/craft-scripts": "^1.2.4",
 		"astuteo/astuteo-toolkit": "^v1.0.0"
 	},
