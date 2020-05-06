@@ -8,7 +8,7 @@
 	"images": "yarn run blendid compress_images"
   },
   "dependencies": {
-	"@fullhuman/postcss-purgecss": "^2.1.0",
+	"@fullhuman/postcss-purgecss": "^2.2.0",
 	"babel-eslint": "^10.1.0",
 	"babel-plugin-transform-class-properties": "^6.24.1",
 	"babel-preset-env": "^1.7.0",
