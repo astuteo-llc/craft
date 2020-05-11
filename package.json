@@ -21,7 +21,7 @@
 	"postcss-flexbugs-fixes": "^4.1.0",
 	"postcss-preset-env": "^6.7.0",
 	"tailwindcss": "1.*.*",
-	"tailwindcss-typography": "^3.0.1"
+	"tailwindcss-typography": "^3.1.0"
   },
   "devDependencies": {
 	"compress-images": "^1.5.8"
