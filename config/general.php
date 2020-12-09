@@ -24,12 +24,30 @@ return [
 
         // The secure key Craft will use for hashing and encrypting data
         'securityKey' => App::env('SECURITY_KEY'),
+
+        'craftEnv' => CRAFT_ENVIRONMENT,
+
+        'allowAdminChanges' => false,
+
+        // Don’t allow updates on Production
+        'allowUpdates' => false,
+
+        'aliases' => array(
+            'siteUrl'   => getenv('DEFAULT_SITE_URL'),
+            'basePath' => getenv('BASE_PATH'),
+            'cdnBaseUrl' => 'https://static.UPDATE.com/',
+            'cdnBucket' => 'UPDATE',
+            'cdnRegion' => 'UPDATE',
+            's3Key' => 'UPDATE',
+        ),
     ],
 
     // Dev environment settings
     'dev' => [
         // Dev Mode (see https://craftcms.com/guides/what-dev-mode-does)
         'devMode' => true,
+        'allowUpdates' => true,
+        'allowAdminChanges' => true,
 
         // Prevent crawlers from indexing pages and following links
         'disallowRobots' => true,
@@ -37,22 +55,11 @@ return [
 
     // Staging environment settings
     'staging' => [
-        // Set this to `false` to prevent administrative changes from being made on Staging
-        'allowAdminChanges' => true,
-
-        // Don’t allow updates on Staging
-        'allowUpdates' => false,
-
         // Prevent crawlers from indexing pages and following links
         'disallowRobots' => true,
     ],
 
     // Production environment settings
     'production' => [
-        // Set this to `false` to prevent administrative changes from being made on Production
-        'allowAdminChanges' => true,
-
-        // Don’t allow updates on Production
-        'allowUpdates' => false,
     ],
 ];
